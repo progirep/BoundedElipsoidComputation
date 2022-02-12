@@ -27,7 +27,7 @@ SOURCES += ellipsoid.cpp main.cpp
 TARGET = boundingelipsoid
 INCLUDEPATH = 
 
-LIBS += -Lm
+LIBS += -static -Lm
 
 PKGCONFIG += 
 QT -= gui \

@@ -95,13 +95,22 @@ double KhachiyanAlgo(const ublas::matrix<double> &A,
 }
 
 
-void readMatrixFromFile(ublas::matrix<double> **A, unsigned int *nofDimensions, std::istream *is) {
+void readMatrixFromFile(ublas::matrix<double> **A, unsigned int *nofDimensions, std::istream *is, uint32_t nofInitialLinesToBeSkipped) {
 
 
     // Read from Stdin - Unknown length of input. Need to buffer it.
     std::list<std::vector<double> > bufferedLines;
     int nofLine = 1;
     std::string nextLine;
+
+    for (uint32_t i=0;i<nofInitialLinesToBeSkipped;i++) {
+        std::string wasted;
+        if (!std::getline(*is,wasted)) {
+            std::cerr << "Error: The input does not have as many lines as they are to be skipped.\n";
+            std::exit(1);
+        }
+    }
+
     while (std::getline(*is,nextLine)) {
         // Interpret line.
 
@@ -153,6 +162,7 @@ int main(int nofArgs, char **args) {
     int maxNofIterations = 1000;
     int printVolumeEveryNthIteration = -1;
     bool installSIGINTHandler = true;
+    uint32_t nofInitialLinesToBeSkipped = 0;
 
     std::string inFileName = ""; // empty string represents: No file name given.
     for (int i=1;i<nofArgs;i++) {
@@ -193,6 +203,19 @@ int main(int nofArgs, char **args) {
                         std::cerr << "Error: Maximum number of iterations needs to be positive.\n";
                         return 1;
                     }
+
+                } else if (thisArg=="--skipfirstNLines") {
+                    if (i>=nofArgs-1) {
+                        std::cerr << "Error: Expecting parameter after '--skipfirstNLines'\n";
+                        return 1;
+                    }
+                    std::istringstream is(args[i+1]);
+                    is >> nofInitialLinesToBeSkipped;
+                    if (is.fail()) {
+                        std::cerr << "Error: Could not parse integer number '" << args[i+1] << "'\n";
+                        return 1;
+                    }
+                    i++;
 
                 } else if (thisArg=="--printVolumeEvery") {
                     if (i>=nofArgs-1) {
@@ -244,10 +267,10 @@ int main(int nofArgs, char **args) {
     unsigned int nofDimensions = 0;
 
     if (inFileName=="") {
-        readMatrixFromFile(&A,&nofDimensions,&(std::cin));
+        readMatrixFromFile(&A,&nofDimensions,&(std::cin),nofInitialLinesToBeSkipped);
     } else {
         std::ifstream inFile(inFileName);
-        readMatrixFromFile(&A,&nofDimensions,&(inFile));
+        readMatrixFromFile(&A,&nofDimensions,&(inFile),nofInitialLinesToBeSkipped);
     }
 
 

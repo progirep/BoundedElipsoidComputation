@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import random, math, functools
+import random, math, functools, subprocess
 
 
 def generateExample(nofDimensions,nofPoints,seed,outFile):
@@ -20,9 +20,10 @@ def generateExample(nofDimensions,nofPoints,seed,outFile):
         # Scale
         scaleDim = random.sample(range(nofDimensions),1)[0]
         scale = random.gauss(1,0.3)
-        for j,point in enumerate(points):
-            point[scaleDim] *= scale
-        volume *= scale
+        if scale>0.05:
+            for j,point in enumerate(points):
+                point[scaleDim] *= scale
+            volume *= scale
         
    
         # Rotate
@@ -46,6 +47,20 @@ def generateExample(nofDimensions,nofPoints,seed,outFile):
     return volume
 
 
-volume = generateExample(10,1000,10,"/tmp/test.txt")
-print("Volume: ",volume)
+
+for nofDimensions in [5,6,7,8,9,10,15,20,30,50,100]:
+    for sample in range(0,5):
+        volume = generateExample(nofDimensions,10000,1234567*nofDimensions+sample,"/tmp/test.txt")
+        measuredVolume = None
+        runProc = subprocess.Popen("../src/boundingelipsoid /tmp/test.txt --maxIterations 2000 --maxPrecision 0",stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
+        for line in runProc.stdout.readlines():
+            line = line.decode("utf-8")
+            if line.startswith("Result - Volume Elipsoid:"):
+                rest = line[26:]
+                measuredVolume = float(rest)
+        assert runProc.wait()==0
+        if measuredVolume is None:
+            raise Exception("Failed to find result.")
+        ratio = measuredVolume/volume                                
+        print("#Dim",nofDimensions,"sample",sample,":\t",ratio,"\t",measuredVolume,"\t",volume)
 
